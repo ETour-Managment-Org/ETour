@@ -1,1 +1,34 @@
-/.metadata/
+# Eclipse workspace
+.metadata/
+
+# Eclipse files
+.project
+.classpath
+.settings/
+
+# VS Code
+.vscode/
+
+# IntelliJ
+.idea/
+*.iml
+
+# Logs
+*.log
+
+# Lock files
+*.lock
+
+# Zip files
+*.zip
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Java
+target/
+
+# Node
+node_modules/
+dist/
