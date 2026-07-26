@@ -4,12 +4,14 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
 
 import com.example.demo.entity.PassengerDetail;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.repository.PassengerRepository;
 import com.example.demo.service.PassengerService;
 
+@Service
 public class PassengerImplementation implements PassengerService {
 
 	PassengerRepository passengerRepo;
