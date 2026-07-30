@@ -36,7 +36,7 @@ public class BookingController {
 	}
 	
 	@GetMapping("/Booking/{id}")
-	public ResponseEntity<BookingHeader> GetBookingById(@PathVariable int id) {
+	public ResponseEntity<Booking> GetBookingById(@PathVariable int id) {
 		// Set the owning side of the relationship
 
 		return bookingService.retriveBookingbyId(id);

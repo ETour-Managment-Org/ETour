@@ -4,15 +4,15 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 
-import com.tourism.demo.entity.BookingHeader;
+import com.tourism.demo.entity.Booking;
 
 public interface BookingService {
 
-	ResponseEntity<BookingHeader> addBooking(BookingHeader bookingHeader);
+	ResponseEntity<Booking> addBooking(Booking bookingHeader);
 
-	ResponseEntity<List<BookingHeader>> retriveBooking();
+	ResponseEntity<List<Booking>> retriveBooking();
 
-	ResponseEntity<BookingHeader> retriveBookingbyId(int id);
+	ResponseEntity<Booking> retriveBookingbyId(int id);
 
 
 

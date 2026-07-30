@@ -78,7 +78,7 @@ public class AuthController {
         User user = User.builder()
                 .username(signupRequest.getUsername())
                 .email(signupRequest.getEmail())
-                .passwordHash(passwordEncoder.encode(signupRequest.getPassword()))
+                .password(passwordEncoder.encode(signupRequest.getPassword()))
                 .role(userRole)
                 .isActive(true)
                 .build();

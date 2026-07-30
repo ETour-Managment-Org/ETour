@@ -4,14 +4,15 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 
-import com.tourism.demo.entity.PassengerDetail;
+
+import com.tourism.demo.entity.PassengerDetails;
 
 public interface PassengerService {
 
-       ResponseEntity<PassengerDetail> addPassenger(PassengerDetail passengerDetail);
+       ResponseEntity<PassengerDetails> addPassenger(PassengerDetails passengerDetail);
 
-	ResponseEntity<List<PassengerDetail>> retrivePassenger();
+	ResponseEntity<List<PassengerDetails>> retrivePassenger();
 
-	ResponseEntity<PassengerDetail> retrivePassengers(int id);
+	ResponseEntity<PassengerDetails> retrivePassengers(int id);
 
 }
