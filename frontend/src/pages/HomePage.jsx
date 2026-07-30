@@ -1,27 +1,27 @@
-import { Button, List, Space, Typography } from 'antd'
-import { useEffect } from 'react'
-import DemoCard from '../components/DemoCard'
-import { useUser } from '../hooks/useUser'
-import { useFetch } from '../hooks/useFetch'
-import { formatDate } from '../helpers/formatDate'
+import { Button, List, Space, Typography } from "antd";
+import { useEffect } from "react";
+import DemoCard from "../components/DemoCard";
+import { useUser } from "../hooks/useUser";
+import { useFetch } from "../hooks/useFetch";
+import { formatDate } from "../helpers/formatDate";
 
-const { Paragraph, Title } = Typography
+const { Paragraph, Title } = Typography;
 
 export default function HomePage() {
-  const { user, isAuthenticated, login, logout } = useUser()
-  const { data, loading, error, refetch } = useFetch('/posts?_limit=5')
+  const { user, isAuthenticated, login, logout } = useUser();
+  const { data, loading, error, refetch } = useFetch("/posts?_limit=5");
 
   useEffect(() => {
-    document.title = 'Home | CDAC Project'
-  }, [])
+    document.title = "Home | CDAC Project";
+  }, []);
 
   return (
     <Space direction="vertical" size="large" className="w-full">
       <div>
         <Title level={3}>Welcome, {user.name}</Title>
         <Paragraph type="secondary">
-          This is the starter home page. Add your feature pages under{' '}
-          <code>src/pages</code> and register them in{' '}
+          This is the starter home page. Add your feature pages under{" "}
+          <code>src/pages</code> and register them in{" "}
           <code>src/routes/routeConfig.js</code>.
         </Paragraph>
       </div>
@@ -34,7 +34,7 @@ export default function HomePage() {
           <Button
             type="primary"
             disabled={isAuthenticated}
-            onClick={() => login({ name: 'Team Member' })}
+            onClick={() => login({ name: "Team Member" })}
           >
             Demo Login
           </Button>
@@ -57,7 +57,10 @@ export default function HomePage() {
           dataSource={data || []}
           renderItem={(item) => (
             <List.Item>
-              <List.Item.Meta title={item.title} description={`Post #${item.id}`} />
+              <List.Item.Meta
+                title={item.title}
+                description={`Post #${item.id}`}
+              />
             </List.Item>
           )}
         />
@@ -66,5 +69,7 @@ export default function HomePage() {
         </Button>
       </DemoCard>
     </Space>
-  )
+
+    // slkdfj
+  );
 }
