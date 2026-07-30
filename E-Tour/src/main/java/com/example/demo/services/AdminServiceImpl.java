@@ -1,0 +1,373 @@
+package com.example.demo.services;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.example.demo.dto.CostDTO;
+import com.example.demo.dto.ItineraryDTO;
+import com.example.demo.dto.ScheduleDTO;
+import com.example.demo.dto.TourDetailDTO;
+import com.example.demo.dto.admin.AdminBookingDTO;
+import com.example.demo.dto.admin.CostRequestDTO;
+import com.example.demo.dto.admin.ItineraryRequestDTO;
+import com.example.demo.dto.admin.ScheduleRequestDTO;
+import com.example.demo.dto.admin.TourRequestDTO;
+import com.example.demo.entities.Booking;
+import com.example.demo.entities.Cancellation;
+import com.example.demo.entities.Category;
+import com.example.demo.entities.Cost;
+import com.example.demo.entities.Itinerary;
+import com.example.demo.entities.Payment;
+import com.example.demo.entities.Schedule;
+import com.example.demo.entities.SubCategoryMaster;
+import com.example.demo.entities.Tour;
+import com.example.demo.exceptions.ResourceNotFoundException;
+import com.example.demo.repositories.BookingRepository;
+import com.example.demo.repositories.CancellationRepository;
+import com.example.demo.repositories.CategoryRepository;
+import com.example.demo.repositories.CostRepository;
+import com.example.demo.repositories.ItineraryRepository;
+import com.example.demo.repositories.PaymentRepository;
+import com.example.demo.repositories.ScheduleRepository;
+import com.example.demo.repositories.SubCategoryRepository;
+import com.example.demo.repositories.TourRepository;
+
+@Service
+public class AdminServiceImpl implements AdminService {
+
+    private final TourRepository tourRepository;
+    private final CostRepository costRepository;
+    private final ItineraryRepository itineraryRepository;
+    private final ScheduleRepository scheduleRepository;
+    private final CategoryRepository categoryRepository;
+    private final SubCategoryRepository subCategoryRepository;
+    private final BookingRepository bookingRepository;
+    private final PaymentRepository paymentRepository;
+    private final CancellationRepository cancellationRepository;
+    private final TourService tourService;
+
+    public AdminServiceImpl(TourRepository tourRepository,
+                            CostRepository costRepository,
+                            ItineraryRepository itineraryRepository,
+                            ScheduleRepository scheduleRepository,
+                            CategoryRepository categoryRepository,
+                            SubCategoryRepository subCategoryRepository,
+                            BookingRepository bookingRepository,
+                            PaymentRepository paymentRepository,
+                            CancellationRepository cancellationRepository,
+                            TourService tourService) {
+        this.tourRepository = tourRepository;
+        this.costRepository = costRepository;
+        this.itineraryRepository = itineraryRepository;
+        this.scheduleRepository = scheduleRepository;
+        this.categoryRepository = categoryRepository;
+        this.subCategoryRepository = subCategoryRepository;
+        this.bookingRepository = bookingRepository;
+        this.paymentRepository = paymentRepository;
+        this.cancellationRepository = cancellationRepository;
+        this.tourService = tourService;
+    }
+
+    @Override
+    @Transactional
+    public TourDetailDTO createTour(TourRequestDTO r) {
+        Tour tour = new Tour();
+        applyTour(tour, r);
+        Tour saved = tourRepository.save(tour);
+        return tourService.getTourDetails(saved.getTourId());
+    }
+
+    @Override
+    @Transactional
+    public TourDetailDTO updateTour(Integer tourId, TourRequestDTO r) {
+        Tour tour = tourRepository.findById(tourId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tour", tourId));
+        applyTour(tour, r);
+        tourRepository.save(tour);
+        return tourService.getTourDetails(tourId);
+    }
+
+    @Override
+    @Transactional
+    public void deleteTour(Integer tourId) {
+        Tour tour = tourRepository.findById(tourId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tour", tourId));
+
+        boolean hasBookings = bookingRepository.findAll().stream()
+                .anyMatch(b -> b.getTour() != null
+                        && tourId.equals(b.getTour().getTourId()));
+        if (hasBookings) {
+            throw new IllegalStateException(
+                    "Tour " + tourId + " has bookings against it and cannot be deleted. "
+                  + "Remove its schedules instead so it can no longer be booked.");
+        }
+        tourRepository.delete(tour);
+    }
+
+    private void applyTour(Tour tour, TourRequestDTO r) {
+        tour.setTourName(r.getTourName());
+        tour.setDestination(r.getDestination());
+        tour.setDays(r.getDays());
+        tour.setNights(r.getNights());
+        tour.setDescription(r.getDescription());
+        tour.setPrice(r.getPrice());
+        tour.setLocation(r.getLocation());
+        tour.setStayAndMeals(r.getStayAndMeals());
+        tour.setAddOns(r.getAddOns());
+        tour.setPassportAndVisa(r.getPassportAndVisa());
+        tour.setWeather(r.getWeather());
+        tour.setDoAndDont(r.getDoAndDont());
+
+        if (r.getCategoryId() != null) {
+            Category category = categoryRepository.findById(r.getCategoryId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Category", r.getCategoryId()));
+            tour.setCategory(category);
+        }
+        if (r.getSubCategoryId() != null) {
+            SubCategoryMaster sub = subCategoryRepository.findById(r.getSubCategoryId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "SubCategory", r.getSubCategoryId()));
+            tour.setSubCategory(sub);
+        }
+    }
+
+    @Override
+    @Transactional
+    public CostDTO createCost(CostRequestDTO r) {
+        Cost cost = new Cost();
+        cost.setTour(requireTour(r.getTourId()));
+        applyCost(cost, r);
+        return toCostDTO(costRepository.save(cost));
+    }
+
+    @Override
+    @Transactional
+    public CostDTO updateCost(Integer costId, CostRequestDTO r) {
+        Cost cost = costRepository.findById(costId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cost", costId));
+        if (r.getTourId() != null) {
+            cost.setTour(requireTour(r.getTourId()));
+        }
+        applyCost(cost, r);
+        return toCostDTO(costRepository.save(cost));
+    }
+
+    @Override
+    @Transactional
+    public void deleteCost(Integer costId) {
+        Cost cost = costRepository.findById(costId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cost", costId));
+        costRepository.delete(cost);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CostDTO> getCostsForTour(Integer tourId) {
+        return costRepository.findByTour_TourId(tourId)
+                .stream().map(this::toCostDTO).collect(Collectors.toList());
+    }
+
+    private void applyCost(Cost cost, CostRequestDTO r) {
+        cost.setAdultPrice(r.getAdultPrice());
+        cost.setSinglePersonPrice(r.getSinglePersonPrice());
+        cost.setExtraPersonPrice(r.getExtraPersonPrice());
+        cost.setChildWithBedPrice(r.getChildWithBedPrice());
+        cost.setChildWithoutBedPrice(r.getChildWithoutBedPrice());
+        cost.setValidFrom(r.getValidFrom());
+        cost.setValidTo(r.getValidTo());
+        cost.setIsActive(r.getIsActive() == null || r.getIsActive());
+    }
+
+    @Override
+    @Transactional
+    public ItineraryDTO createItinerary(ItineraryRequestDTO r) {
+        Itinerary it = new Itinerary();
+        it.setTour(requireTour(r.getTourId()));
+        it.setDayNumber(r.getDayNumber());
+        it.setDescription(r.getDescription());
+        it.setLocation(r.getLocation());
+        return toItineraryDTO(itineraryRepository.save(it));
+    }
+
+    @Override
+    @Transactional
+    public ItineraryDTO updateItinerary(Integer itineraryId, ItineraryRequestDTO r) {
+        Itinerary it = itineraryRepository.findById(itineraryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Itinerary", itineraryId));
+        if (r.getTourId() != null) {
+            it.setTour(requireTour(r.getTourId()));
+        }
+        it.setDayNumber(r.getDayNumber());
+        it.setDescription(r.getDescription());
+        it.setLocation(r.getLocation());
+        return toItineraryDTO(itineraryRepository.save(it));
+    }
+
+    @Override
+    @Transactional
+    public void deleteItinerary(Integer itineraryId) {
+        Itinerary it = itineraryRepository.findById(itineraryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Itinerary", itineraryId));
+        itineraryRepository.delete(it);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ItineraryDTO> getItinerariesForTour(Integer tourId) {
+        return itineraryRepository.findByTour_TourIdOrderByDayNumberAsc(tourId)
+                .stream().map(this::toItineraryDTO).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public ScheduleDTO createSchedule(ScheduleRequestDTO r) {
+        Schedule s = new Schedule();
+        s.setTour(requireTour(r.getTourId()));
+        s.setStartDate(r.getStartDate());
+        s.setTotalSeats(r.getTotalSeats());
+
+        s.setAvailableSeats(r.getAvailableSeats() != null
+                ? r.getAvailableSeats() : r.getTotalSeats());
+        s.setStatus(r.getStatus() != null ? r.getStatus() : "OPEN");
+        return toScheduleDTO(scheduleRepository.save(s));
+    }
+
+    @Override
+    @Transactional
+    public ScheduleDTO updateSchedule(Integer scheduleId, ScheduleRequestDTO r) {
+        Schedule s = scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Schedule", scheduleId));
+        if (r.getTourId() != null) {
+            s.setTour(requireTour(r.getTourId()));
+        }
+        s.setStartDate(r.getStartDate());
+        if (r.getTotalSeats() != null) {
+            s.setTotalSeats(r.getTotalSeats());
+        }
+        if (r.getAvailableSeats() != null) {
+            s.setAvailableSeats(r.getAvailableSeats());
+        }
+        if (r.getStatus() != null) {
+            s.setStatus(r.getStatus());
+        }
+        return toScheduleDTO(scheduleRepository.save(s));
+    }
+
+    @Override
+    @Transactional
+    public void deleteSchedule(Integer scheduleId) {
+        Schedule s = scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Schedule", scheduleId));
+
+        boolean booked = s.getTotalSeats() != null && s.getAvailableSeats() != null
+                && s.getAvailableSeats() < s.getTotalSeats();
+        if (booked) {
+            throw new IllegalStateException(
+                    "Schedule " + scheduleId + " already has bookings against it. "
+                  + "Set its status to CLOSED instead of deleting it.");
+        }
+        scheduleRepository.delete(s);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ScheduleDTO> getSchedulesForTour(Integer tourId) {
+        return scheduleRepository.findByTour_TourIdOrderByStartDateAsc(tourId)
+                .stream().map(this::toScheduleDTO).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AdminBookingDTO> getAllBookings() {
+        return bookingRepository.findAllOrderByDateDesc()
+                .stream().map(this::toAdminBookingDTO).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AdminBookingDTO> getBookingsByStatus(String status) {
+        return bookingRepository.findByBookingStatus(status)
+                .stream().map(this::toAdminBookingDTO).collect(Collectors.toList());
+    }
+
+    private Tour requireTour(Integer tourId) {
+        return tourRepository.findById(tourId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tour", tourId));
+    }
+
+    private CostDTO toCostDTO(Cost c) {
+        return CostDTO.builder()
+                .costId(c.getCostId())
+                .adultPrice(c.getAdultPrice())
+                .singlePersonPrice(c.getSinglePersonPrice())
+                .extraPersonPrice(c.getExtraPersonPrice())
+                .childWithBedPrice(c.getChildWithBedPrice())
+                .childWithoutBedPrice(c.getChildWithoutBedPrice())
+                .validFrom(c.getValidFrom())
+                .validTo(c.getValidTo())
+                .isActive(c.getIsActive())
+                .build();
+    }
+
+    private ItineraryDTO toItineraryDTO(Itinerary i) {
+        return ItineraryDTO.builder()
+                .itineraryId(i.getItineraryId())
+                .dayNumber(i.getDayNumber())
+                .description(i.getDescription())
+                .location(i.getLocation())
+                .build();
+    }
+
+    private ScheduleDTO toScheduleDTO(Schedule s) {
+        return ScheduleDTO.builder()
+                .scheduleId(s.getScheduleId())
+                .startDate(s.getStartDate())
+                .availableSeats(s.getAvailableSeats())
+                .totalSeats(s.getTotalSeats())
+                .status(s.getStatus())
+                .build();
+    }
+
+    private AdminBookingDTO toAdminBookingDTO(Booking b) {
+
+        List<Payment> payments = paymentRepository.findByBooking_BookingId(b.getBookingId());
+        Payment latest = payments.isEmpty() ? null : payments.get(payments.size() - 1);
+
+        Cancellation cancellation = cancellationRepository
+                .findByBooking_BookingId(b.getBookingId()).orElse(null);
+
+        String customerName = null;
+        String customerEmail = null;
+        if (b.getUser() != null) {
+            String fn = b.getUser().getFirstName();
+            String ln = b.getUser().getLastName();
+            customerName = ((fn != null ? fn : "") + " " + (ln != null ? ln : "")).trim();
+            if (customerName.isEmpty()) {
+                customerName = b.getUser().getUsername();
+            }
+            customerEmail = b.getUser().getEmail();
+        }
+
+        return AdminBookingDTO.builder()
+                .bookingId(b.getBookingId())
+                .bookingDate(b.getBookingDate())
+                .bookingStatus(b.getBookingStatus())
+                .customerId(b.getUser() != null ? b.getUser().getUserId() : null)
+                .customerName(customerName)
+                .customerEmail(customerEmail)
+                .tourId(b.getTour() != null ? b.getTour().getTourId() : null)
+                .tourName(b.getTour() != null ? b.getTour().getTourName() : null)
+                .scheduleId(b.getSchedule() != null ? b.getSchedule().getScheduleId() : null)
+                .departureDate(b.getSchedule() != null ? b.getSchedule().getStartDate() : null)
+                .noOfPax(b.getPassengers() != null ? b.getPassengers().size() : null)
+                .totalAmount(b.getTotalAmount())
+                .paymentStatus(latest != null ? latest.getPaymentStatus() : null)
+                .paymentMethod(latest != null ? latest.getPaymentMethod() : null)
+                .refundAmount(cancellation != null ? cancellation.getRefundAmount() : null)
+                .refundStatus(cancellation != null ? cancellation.getRefundStatus() : null)
+                .build();
+    }
+}
