@@ -6,8 +6,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import com.tourism.demo.entity.BookingHeader;
-import com.tourism.demo.entity.PassengerDetail;
+import com.tourism.demo.entity.Booking;
+import com.tourism.demo.entity.PassengerDetails;
 import com.tourism.demo.exception.ResourceNotFoundException;
 import com.tourism.demo.repository.BookingRepository;
 import com.tourism.demo.service.BookingService;
@@ -22,28 +22,23 @@ public class BookingImplementation implements BookingService {
 	}
 
 	@Override
-	public ResponseEntity<BookingHeader> addBooking(BookingHeader bookingHeader) {
+	public ResponseEntity<Booking> addBooking(Booking bookingHeader) {
 		// TODO Auto-generated method stub
 		 // Set the owning side of the relationship
-	    for (PassengerDetail passenger
-	            : bookingHeader.getPassengers()) {
-
-	        passenger.setBooking(bookingHeader);
-	    }
-
+	   
 		return new ResponseEntity<>(bookingRepo.save(bookingHeader),HttpStatus.CREATED);
 	}
 
 	@Override
-	public ResponseEntity<List<BookingHeader>> retriveBooking() {
+	public ResponseEntity<List<Booking>> retriveBooking() {
 		// TODO Auto-generated method stub
 		return new ResponseEntity<>(bookingRepo.findAll(),HttpStatus.OK);
 	}
 
 	@Override
-	public ResponseEntity<BookingHeader> retriveBookingbyId(int id) {
+	public ResponseEntity<Booking> retriveBookingbyId(int id) {
 		// TODO Auto-generated method stub
-		BookingHeader bookingHeader=bookingRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException());
+		Booking bookingHeader=bookingRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException());
 		return new ResponseEntity<>(bookingHeader,HttpStatus.OK);
 	}
 
