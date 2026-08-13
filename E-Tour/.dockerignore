@@ -1,0 +1,15 @@
+target/
+.mvn/
+mvnw
+mvnw.cmd
+.classpath
+.factorypath
+.project
+.settings/
+.git/
+.gitignore
+.gitattributes
+FIX_LOGIN_AND_DATA.sql
+.idea/
+*.iml
+.vscode/

@@ -1,0 +1,149 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: etour-mysql
+
+    restart: unless-stopped
+
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+
+    ports:
+      - "3308:3306"
+
+    volumes:
+      - etour_db_data:/var/lib/mysql
+      - ./mysql/data.sql:/docker-entrypoint-initdb.d/data.sql
+
+    networks:
+      - etour-net
+
+  java-backend:
+    build:
+      context: ./E-Tour
+      dockerfile: Dockerfile
+
+    container_name: etour-java-backend
+
+    restart: unless-stopped
+
+    ports:
+      - "8080:8080"
+
+    depends_on:
+      - db
+
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/${DB_NAME}
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${DB_ROOT_PASSWORD}
+
+      JWT_SECRET: ${JWT_SECRET}
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-mock}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
+      PAYMENT_CURRENCY: ${PAYMENT_CURRENCY:-INR}
+
+      OAUTH_ENABLED: ${OAUTH_ENABLED}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+
+      OAUTH_REDIRECT: http://localhost:5173/oauth/callback
+      SITE_URL: http://localhost:5173
+
+      MAIL_ENABLED: ${MAIL_ENABLED}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+
+      MAIL_FROM: ${MAIL_USERNAME}
+      MAIL_OVERRIDE: ${MAIL_OVERRIDE}
+
+      SQL_INIT_MODE: ${SQL_INIT_MODE}
+
+    volumes:
+      - ./E-tour/logs:/app/logs
+
+    networks:
+      - etour-net
+
+  dotnet-backend:
+    build:
+      context: ./ETour-DotNet
+      dockerfile: Dockerfile
+
+    container_name: etour-dotnet-backend
+
+    restart: unless-stopped
+
+    ports:
+      - "5000:5000"
+
+    depends_on:
+      - db
+
+    environment:
+      ASPNETCORE_URLS: http://+:5000
+
+      ConnectionStrings__ETour: >
+        Server=db;
+        Port=3306;
+        Database=${DB_NAME};
+        User=root;
+        Password=${DB_ROOT_PASSWORD};
+
+      Jwt__Secret: ${JWT_SECRET}
+
+      ETour__Payment__Provider: ${PAYMENT_PROVIDER:-mock}
+      ETour__Payment__Razorpay__KeyId: ${RAZORPAY_KEY_ID:-}
+      ETour__Payment__Razorpay__KeySecret: ${RAZORPAY_KEY_SECRET:-}
+      ETour__Payment__Currency: ${PAYMENT_CURRENCY:-INR}
+      ETour__OAuth__Enabled: "true"
+      ETour__OAuth__GoogleClientId: ${GOOGLE_CLIENT_ID}
+      ETour__OAuth__GoogleClientSecret: ${GOOGLE_CLIENT_SECRET}
+      ETour__OAuth__RedirectUri: http://localhost:5173/signin-google
+
+      ETour__Mail__Enabled: "true"
+      ETour__Mail__Host: smtp.gmail.com
+      ETour__Mail__Port: "587"
+      ETour__Mail__Username: ${MAIL_USERNAME}
+      ETour__Mail__Password: ${MAIL_PASSWORD}
+      ETour__Mail__From: ${MAIL_USERNAME}
+
+      ETour__Mail__OverrideRecipient: ${MAIL_OVERRIDE}
+
+      ETour__SiteUrl: http://localhost:5173
+
+      ETour__ImagesDir: /app/images
+
+    volumes:
+      - etour_images:/app/images
+
+    networks:
+      - etour-net
+
+  frontend:
+    build:
+      context: ./E-tour-FrontEnd
+      dockerfile: Dockerfile
+
+    container_name: etour-frontend
+
+    restart: unless-stopped
+
+    ports:
+      - "5173:80"
+
+    depends_on:
+      - java-backend
+      - dotnet-backend
+
+    networks:
+      - etour-net
+
+networks:
+  etour-net:
+
+volumes:
+  etour_db_data:
+  etour_images:

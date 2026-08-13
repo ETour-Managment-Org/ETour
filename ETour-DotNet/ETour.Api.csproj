@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <RootNamespace>ETour.Api</RootNamespace>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- EF Core 9 packages run fine on .NET 10. Bump both to 10.x once Pomelo
+         ships its EF Core 10 build. -->
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+
+    <PackageReference Include="AutoMapper" Version="16.2.0" />
+    <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
+    <PackageReference Include="MailKit" Version="4.17.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.1" />
+    <!-- Built-in OpenAPI only. Swashbuckle 7.2.0 is compiled against
+         Microsoft.OpenApi 1.6.x and blows up at startup on .NET 10, which
+         resolves 2.0.0. For a browsable UI add Scalar:
+             dotnet add package Scalar.AspNetCore
+         then app.MapScalarApiReference(); alongside app.MapOpenApi(); -->
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
+
+    <!-- structured logging -->
+    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+
+    <!-- server-side validation.
+         Deliberately NOT FluentValidation.AspNetCore - that package is
+         deprecated. ValidationFilter.cs does the same job in 30 lines. -->
+
+    <PackageReference Include="FluentValidation" Version="11.11.0" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
+  </ItemGroup>
+
+  <!-- Without this the tour images are not copied on build/publish, so every
+       card falls back to the placeholder the moment you run outside the
+       project folder. -->
+  <ItemGroup>
+    <Content Include="images\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

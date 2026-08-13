@@ -1,0 +1,43 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+
+  jpa:
+    hibernate:
+      ddl-auto: validate        # fail fast if the schema does not match the entities
+    show-sql: false             # SQL in production logs is noise and a data leak
+
+  sql:
+    init:
+      mode: never               # NEVER reseed - it would delete live bookings
+
+logging:
+  level:
+    root: WARN
+    com.etour: INFO
+  file:
+    name: logs/etour-application.log
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info    # metrics withheld; health and info only
+  endpoint:
+    health:
+      show-details: when-authorized   # anonymous callers see UP/DOWN and nothing more
+      roles: ADMIN
+
+server:
+  error:
+    include-stacktrace: never   # never leak a stack trace to a client
+    include-message: never
+
+etour:
+  images:
+    dir: ${IMAGES_DIR:/var/etour/images}
