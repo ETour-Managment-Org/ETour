@@ -1,0 +1,88 @@
+spring.application.name=E-Tour
+server.port=8080
+
+spring.datasource.url=jdbc:mysql://localhost:3306/etour_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+spring.datasource.username=root
+spring.datasource.password=root
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+
+# Seeding is env-driven so it can be switched from docker-compose.yml without
+# rebuilding the image. "always" reseeds on every start, "never" leaves the
+# database alone. data.sql is a deterministic RESET - it deletes before it
+# inserts - so "always" wipes any booking made since the last start.
+spring.sql.init.mode=${SQL_INIT_MODE:always}
+spring.jpa.defer-datasource-initialization=true
+
+logging.level.com.example.demo=DEBUG
+
+app.jwt.secret=${JWT_SECRET:ZS1Ub3VyLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC1rZXktY2hhbmdlLWJlZm9yZS1wcm9kdWN0aW9uLTEyMzQ1Njc4OTA=}
+app.jwt.expiration-ms=86400000
+
+etour.pricing.child-max-age=12
+
+etour.cancellation.full-refund-days=7
+etour.cancellation.partial-refund-days=3
+etour.cancellation.full-refund-percent=100
+etour.cancellation.partial-refund-percent=50
+etour.cancellation.no-refund-percent=0
+
+etour.images.dir=images
+spring.web.resources.add-mappings=true
+spring.servlet.multipart.max-file-size=10MB
+spring.servlet.multipart.max-request-size=10MB
+
+spring.profiles.active=${SPRING_PROFILES_ACTIVE:dev}
+
+management.endpoints.web.exposure.include=health,info,metrics
+management.endpoint.health.show-details=when-authorized
+management.endpoint.health.roles=ADMIN
+management.endpoints.web.base-path=/actuator
+management.info.env.enabled=true
+info.app.name=e-Tour Management System
+info.app.description=Tour booking platform - C-DAC VITA capstone
+info.app.version=1.0.0
+
+spring.mail.host=${MAIL_HOST:smtp.gmail.com}
+spring.mail.port=${MAIL_PORT:587}
+spring.mail.username=${MAIL_USERNAME:}
+spring.mail.password=${MAIL_PASSWORD:}
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+spring.mail.properties.mail.smtp.connectiontimeout=5000
+spring.mail.properties.mail.smtp.timeout=5000
+spring.mail.properties.mail.smtp.writetimeout=5000
+
+etour.mail.enabled=${MAIL_ENABLED:true}
+etour.mail.from=${MAIL_FROM:noreply@etour.co.in}
+etour.mail.from-name=e-Tour by IndiaTour
+etour.mail.support-email=support@etour.co.in
+etour.mail.support-phone=+91 98200 11223
+etour.mail.override-recipient=${MAIL_OVERRIDE:}
+
+# The defaults below are the literal string "not-configured", NOT an empty value.
+#
+# Spring Boot validates every OAuth2 registration when the properties bean is
+# created, long before any of our code runs, and an EMPTY client-id is a hard
+# startup failure:
+#
+#   IllegalStateException: Client id of registration 'google' must not be empty.
+#
+# A non-empty placeholder passes that validation, and OAuth2Properties treats
+# "not-configured" as "off" - so the app starts fine with no Google credentials
+# and the Continue with Google button stays hidden.
+spring.security.oauth2.client.registration.google.client-id=${GOOGLE_CLIENT_ID:not-configured}
+spring.security.oauth2.client.registration.google.client-secret=${GOOGLE_CLIENT_SECRET:not-configured}
+spring.security.oauth2.client.registration.google.scope=openid,email,profile
+spring.security.oauth2.client.registration.google.redirect-uri={baseUrl}/login/oauth2/code/{registrationId}
+
+etour.oauth.enabled=${OAUTH_ENABLED:false}
+# In Docker the React build is served by this same application, so the browser
+# never visits 5173 - set OAUTH_REDIRECT and SITE_URL to port 8080 there.
+etour.oauth.redirect-uri=${OAUTH_REDIRECT:http://localhost:5173/oauth/callback}
+
+etour.site-url=${SITE_URL:http://localhost:5173}
+etour.scheduling.completion-cron=${COMPLETION_CRON:0 0 7 * * *}

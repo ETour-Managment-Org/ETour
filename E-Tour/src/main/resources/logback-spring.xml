@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!--
+        Logback picks this file up automatically because it is named
+        logback-spring.xml and sits on the classpath. The "-spring" suffix
+        (rather than plain logback.xml) is what lets <springProfile> work,
+        because Spring Boot parses it after the environment is ready.
+    -->
+
+    <property name="ACTIVITY_LOG" value="logs/application-activity.log"/>
+
+    <!-- ordinary application logging, unchanged, goes to the console -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - [%X{requestId:--} %X{user:--} %X{ip:--}] %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!--
+        The activity file. RollingFileAppender rather than FileAppender so the
+        file cannot grow without limit: a new file per day, 30 days kept,
+        capped at 100MB in total.
+
+        The pattern is just %msg%n because the aspect has already built the
+        whole pipe-delimited line, including its own timestamp. Adding
+        Logback's timestamp as well would put two on every row.
+    -->
+    <appender name="ACTIVITY_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${ACTIVITY_LOG}</file>
+        <append>true</append>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/application-activity.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>100MB</totalSizeCap>
+        </rollingPolicy>
+
+        <encoder>
+            <pattern>[%X{requestId:--} %X{user:--} %X{ip:--}] %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!--
+        The routing rule.
+
+        additivity="false" is the important attribute. Without it every
+        activity line would ALSO travel up to the root logger and be printed
+        to the console a second time.
+    -->
+    <logger name="USER_ACTIVITY" level="INFO" additivity="false">
+        <appender-ref ref="ACTIVITY_FILE"/>
+    </logger>
+
+    <!-- per-profile verbosity for everything else -->
+    <springProfile name="dev">
+        <logger name="com.etour" level="DEBUG"/>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <springProfile name="prod">
+        <logger name="com.etour" level="INFO"/>
+        <root level="WARN">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <!-- when no profile is active -->
+    <springProfile name="!dev &amp; !prod">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+</configuration>
