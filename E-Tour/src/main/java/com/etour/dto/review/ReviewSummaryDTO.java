@@ -10,9 +10,12 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class ReviewSummaryDTO {
+
     private Integer tourId;
 
     private Double averageRating;
+
+    private Double ratingPercentage;
 
     private Long totalReviews;
 
